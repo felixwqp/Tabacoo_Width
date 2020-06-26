@@ -147,15 +147,16 @@ skeleton =morphology.skeletonize(gray, method='lee')
 
 # Compute the medial axis (skeleton) and the distance transform
 skel, distance = medial_axis(gray, return_distance=True)
+dist_on_skel = distance * skel
 
 plt.imshow(skel)
 print(skel.shape)
 print(distance.shape)
 
 # plt.imshow(skeleton)
-plt.show()
+# plt.show()
 
-fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(8, 4))
+fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3,  figsize=(12, 4))
 
 
 ax1.imshow(skel, cmap=plt.cm.gray)
@@ -165,6 +166,10 @@ ax1.set_title('original', fontsize=20)
 ax2.imshow(distance, cmap=plt.cm.gray)
 ax2.axis('off')
 ax2.set_title('skeleton', fontsize=20)
+
+ax3.imshow(dist_on_skel, cmap=plt.cm.gray)
+ax3.axis('off')
+ax3.set_title('skeleton', fontsize=20)
 
 fig.tight_layout()
 plt.show()
