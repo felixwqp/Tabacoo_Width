@@ -4,6 +4,23 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage import morphology,draw
 from skimage.morphology import medial_axis
+from collections import defaultdict
+from remove_burr import Clain
+
+"""
+
+
+"""
+
+
+def get_width(skel_point, contour, skel):
+    # get_slope
+    return
+    # extend normal to get two point
+
+    # two point distance.
+
+
 
 
 def VThin(image, array):
@@ -121,11 +138,22 @@ new_contours = []
 
 for i in range(len(contours)):
     if area_record[i] >= max_area * 0.1 and area_record[i] <= max_area * 0.2:
-        new_contours.append(contours[i])
+        cnt = contours[i]
+        new_contours.append(cnt)
+        width_cnt = cv.contourArea(cnt) / cv.arcLength(cnt, True) * 2
+        print('Avg Width: Area/arcLength * 2 : ', width_cnt)
+
+        # rect = cv.minAreaRect(cnt)
+        # box = cv.boxPoints(rect)
+        # box = np.int0(box)
+        # print(box)
+        # cv.drawContours(img, [box], 0, (0, 0, 255), 2)
+        # print('M: ',i)
+        # print(cv.moments(contours[i]))
 # empty_image
 image[...] = 0
 
-image = cv.drawContours(image, new_contours, -1,   (0, 255, 0),  cv.FILLED)
+image = cv.drawContours(image, new_contours, -1,   (0, 255, 0), cv.FILLED)
 
 
 # convert to RGB
@@ -139,7 +167,20 @@ print(image.shape)
 # _, binary = cv.threshold(gray, 225, 255, cv.THRESH_BINARY_INV)
 
 
-skeleton =morphology.skeletonize(gray, method='lee')
+blur=((5,5),1)
+erode_=(10,10)
+dilate_=(20, 20)
+gray = cv.erode(cv.dilate(cv.GaussianBlur(gray, blur[0], blur[1]), np.ones(dilate_)), np.ones(erode_) , 1)
+
+
+
+# plt.imshow(gray1)
+# plt.show()
+# plt.imshow(gray4)
+# plt.show()
+
+
+# skeleton =morphology.skeletonize(gray, method='lee')
 
 # print(len(contours))
 # show the image with the drawn contours
@@ -149,27 +190,90 @@ skeleton =morphology.skeletonize(gray, method='lee')
 skel, distance = medial_axis(gray, return_distance=True)
 dist_on_skel = distance * skel
 
+
+# erode and dilate for skel
+erode_skel_20 =(15, 15)
+erode_skel_10 =(10, 10)
+dilate_skel = (10, 10)
+
+skel_float = skel.astype(float)
+
+skel_dilate = cv.dilate(skel_float, np.ones(dilate_skel))
+skel_erode_20  = cv.erode(skel_dilate, np.ones(erode_skel_20))
+skel_erode_10  = cv.erode(skel_dilate, np.ones(erode_skel_10))
+
+plt.imshow(skel_dilate)
+plt.imshow(skel_erode_20)
+plt.imshow(skel_erode_10)
 plt.imshow(skel)
+plt.show()
+
+
+
+
+x = Clain()
+x.selct(skel)
+x.start()
+last = x.dpoint
+while True:
+    x.selct(x.imag)
+    now=x.dpoint
+    x.start()
+    if now==last:
+        break
+    else:
+        last=now
+
+x1 = x.im
+x2 = x.imag
+
+
+print(dist_on_skel.shape)
+
+points = defaultdict(list)#[[x, y, val],]
+for i in range(len(dist_on_skel)):
+    vals = dist_on_skel[i]
+    for j in range(len(vals)):
+        val = dist_on_skel[i][j]
+        if val > 1:
+            # print(i, j, distance[i][j])
+            for idx_cnt in range(len(new_contours)):
+                if cv.pointPolygonTest(new_contours[idx_cnt], (i, j), True):
+                    # print(idx_cnt)
+                    points[idx_cnt].append([i,j,val])
+                    break
+
+# plt.imshow(skel)
 print(skel.shape)
 print(distance.shape)
 
-# plt.imshow(skeleton)
-# plt.show()
-
-fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3,  figsize=(12, 4))
 
 
-ax1.imshow(skel, cmap=plt.cm.gray)
-ax1.axis('off')
-ax1.set_title('original', fontsize=20)
+# extent = np.min(x), np.max(x), np.min(y), np.max(y)
+fig = plt.figure(frameon=False)
 
-ax2.imshow(distance, cmap=plt.cm.gray)
-ax2.axis('off')
-ax2.set_title('skeleton', fontsize=20)
 
-ax3.imshow(dist_on_skel, cmap=plt.cm.gray)
-ax3.axis('off')
-ax3.set_title('skeleton', fontsize=20)
+im1 = plt.imshow(gray, cmap=plt.cm.gray, interpolation='nearest')
 
-fig.tight_layout()
+
+im2 = plt.imshow(skel, cmap=plt.cm.viridis, alpha=.9, interpolation='bilinear')
+
 plt.show()
+#
+# fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3,  figsize=(12, 4))
+#
+#
+# ax1.imshow(skel, cmap=plt.cm.gray)
+# ax1.axis('off')
+# ax1.set_title('skeleton', fontsize=20)
+#
+# ax2.imshow(distance, cmap=plt.cm.gray)
+# ax2.axis('off')
+# ax2.set_title('distance', fontsize=20)
+#
+# ax3.imshow(dist_on_skel, cmap=plt.cm.gray)
+# ax3.axis('off')
+# ax3.set_title('dist on skel', fontsize=20)
+#
+# fig.tight_layout()
+# plt.show()
